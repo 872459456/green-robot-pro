@@ -39,7 +39,7 @@ feishu:
 # YOLOv8模型配置
 model:
   enabled: true
-  path: models/yolov8n-leaf.onnx
+  path: models/yolov8n.onnx
   conf-threshold: 0.5
   iou-threshold: 0.45
   max-det: 100
