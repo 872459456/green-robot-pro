@@ -2,37 +2,64 @@
 
 ---
 
-## v3.0.0 (2026-04-28) 🔄 规划中
+## v3.1.0 (2026-04-28) ✅ 已完成
+
+### PRD v3.1 全部任务完成
+
+**功能完成清单:**
+- ✅ 监控状态API
+- ✅ 手动拍摄API
+- ✅ 最新图片API
+- ✅ 监控页面
+- ✅ 自动拍摄定时任务
+- ✅ 每日健康检查
+- ✅ 观测记录存储
+- ✅ 飞书Webhook对接
+- ✅ 叶片详情页图表
+
+**后端更新:**
+- ScheduledTaskService: 定时拍摄(每小时)+每日健康检查(9点)
+- ObservationService: 观测记录创建/叶片状态更新
+- FeishuController: 飞书Webhook测试接口 `/api/feishu/test`
+- LeafService: createObservation/updateLeafHealthStatus
+- MonitorService: 集成观测记录保存
+
+**前端更新:**
+- Home.vue: 完善首页统计和操作入口
+- LeafDetail.vue: G2Plot面积趋势图表
+
+---
+
+## v3.0.0 (2026-04-28) ✅ 已完成
 
 ### 项目初始化
 
 **产品名称**: 办公室绿萝 Pro
 
-**技术栈升级:**
+**技术栈:**
 - 前端: Vue 3 + Element Plus
 - 后端: Java (Spring Boot)
-- 数据库: SQLite (保留)
+- 数据库: SQLite
 - 存储: 本地文件系统
-- 模型: 本地AI模型 (YOLOv8 + ONNX)
 
-**架构变更:**
-- 从Python单体应用 → Java + Vue前后端分离 + AI模型
+**架构:**
+- Java + Vue前后端分离
 - 保留Python v2.2.0作为生产参考
 
 ---
 
 ### 完整迭代路线图
 
-#### v3.0 阶段 - 基础设施 (当前)
-- [ ] 迭代日志系统设计
-- [ ] Java后端项目骨架搭建
-- [ ] SQLite数据库连接层
-- [ ] 核心业务逻辑迁移准备
+#### v3.0 阶段 - 基础设施 ✅
+- [x] 迭代日志系统设计
+- [x] Java后端项目骨架搭建
+- [x] SQLite数据库连接层
+- [x] 核心业务逻辑
 
-#### v3.1 阶段 - 架构升级
-- [ ] Vue前端项目初始化
-- [ ] RESTful API设计
-- [ ] 前后端联调
+#### v3.1 阶段 - 架构升级 ✅ (当前)
+- [x] Vue前端项目初始化
+- [x] RESTful API设计
+- [x] 前后端联调
 
 #### v4.0 阶段 - 本地模型集成
 - [ ] 本地图像识别模型选型
