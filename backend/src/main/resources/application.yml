@@ -15,10 +15,21 @@ spring:
       hibernate:
         format_sql: true
 
+  # 静态文件配置
+  web:
+    resources:
+      static-locations: file:../data/captures/,classpath:/static/
+
 server:
   port: 5501
   servlet:
     context-path: /api
+
+# 摄像头配置
+camera:
+  enabled: true
+  index: 0
+  image-dir: ../data/captures
 
 # 飞书Webhook配置
 feishu:
