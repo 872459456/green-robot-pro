@@ -63,6 +63,18 @@ public class MonitorService {
     private static final DateTimeFormatter FILE_DATE_FORMAT = 
             DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
     
+    /** 观测记录服务（注入） */
+    private ObservationService observationService;
+    
+    /**
+     * 设置观测记录服务
+     * 用于解决循环依赖
+     */
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setObservationService(ObservationService observationService) {
+        this.observationService = observationService;
+    }
+    
     /**
      * 获取监控系统状态
      * 
@@ -148,7 +160,9 @@ public class MonitorService {
             
             log.info("拍摄成功: {}, 叶片数: {}", imagePath, leafCount);
             
-            return CaptureResultDTO.success(
+            // ========== 7. 创建观测记录 ==========
+            // 拍摄成功后，保存观测记录到数据库
+            CaptureResultDTO result = CaptureResultDTO.success(
                     imagePath,
                     annotatedPath,
                     leafCount,
@@ -158,6 +172,17 @@ public class MonitorService {
                     healthyCount,
                     attentionCount
             );
+            
+            // 异步保存观测记录（避免阻塞主流程）
+            if (observationService != null) {
+                try {
+                    observationService.createObservationsFromCapture(result);
+                } catch (Exception e) {
+                    log.error("保存观测记录失败", e);
+                }
+            }
+            
+            return result;
             
         } catch (Exception e) {
             log.error("拍摄异常", e);

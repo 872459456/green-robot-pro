@@ -287,17 +287,85 @@ async function loadLeafData() {
 /**
  * 绘制成长趋势图表
  */
-function drawCharts() {
+async function drawCharts() {
   if (observations.value.length === 0) return;
   
-  // 使用G2Plot绘制面积趋势图
-  // TODO: 实现图表绘制
-  
   const container = document.getElementById('areaChart');
-  if (container) {
-    // 简单的HTML表格作为占位
-    container.innerHTML = '<p style="text-align: center; color: #909399;">图表加载中...</p>';
+  if (!container) return;
+  
+  // 如果观测记录太少，显示提示
+  if (observations.value.length < 2) {
+    container.innerHTML = '<p style="text-align: center; color: #909399;">数据不足，需要至少2条记录才能显示图表</p>';
+    return;
   }
+  
+  try {
+    // 动态导入G2Plot
+    const [ { Line } ] = await Promise.all([
+      import('@antv/g2plot')
+    ]);
+    
+    // 准备面积数据（按时间正序）
+    const areaData = observations.value
+      .slice()
+      .reverse()
+      .map((obs, index) => ({
+        date: formatDateShort(obs.observationTime),
+        area: obs.area,
+        hValue: obs.colorH
+      }));
+    
+    // 绘制面积趋势图
+    const areaPlot = new Line(container, {
+      data: areaData,
+      xField: 'date',
+      yField: 'area',
+      smooth: true,
+      color: '#52c41a',
+      point: {
+        size: 4,
+        shape: 'circle',
+        style: {
+          fill: '#52c41a'
+        }
+      },
+      label: {
+        formatter: (v) => v.toFixed(0)
+      },
+      xAxis: {
+        label: {
+          formatter: (v) => v
+        }
+      },
+      yAxis: {
+        label: {
+          formatter: (v) => v.toFixed(0)
+        }
+      },
+      title: {
+        text: '面积趋势',
+        style: {
+          fontSize: 14
+        }
+      },
+      height: 200
+    });
+    
+    areaPlot.render();
+    
+  } catch (error) {
+    console.error('图表渲染失败:', error);
+    container.innerHTML = '<p style="text-align: center; color: #ff4d4f;">图表加载失败</p>';
+  }
+}
+
+/**
+ * 格式化日期（短格式）
+ */
+function formatDateShort(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
 /**

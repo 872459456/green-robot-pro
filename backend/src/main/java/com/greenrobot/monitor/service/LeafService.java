@@ -19,7 +19,7 @@ import java.util.UUID;
  * 提供叶片的增删改查等管理功能
  * 
  * @author 狼群团队
- * @version 3.0.0
+ * @version 3.1.0
  * @since 2026-04-28
  */
 @Service
@@ -210,15 +210,15 @@ public class LeafService {
 
     /**
      * 获取叶片统计信息
-     * 
+     *
      * @return 统计信息
      */
     public LeafStatistics getStatistics() {
         LeafStatistics stats = new LeafStatistics();
-        
+
         // 总叶片数
         stats.setTotalLeaves(confirmedLeafRepository.count());
-        
+
         // 各状态数量
         List<Object[]> statusCounts = confirmedLeafRepository.countByHealthStatus();
         for (Object[] row : statusCounts) {
@@ -226,11 +226,80 @@ public class LeafService {
             Long count = (Long) row[1];
             stats.getStatusCounts().put(status, count);
         }
-        
+
         // 需要关注的叶片数
         stats.setAttentionCount(confirmedLeafRepository.findLeavesNeedingAttention().size());
-        
+
         return stats;
+    }
+
+    /**
+     * 创建观测记录
+     *
+     * 将检测到的叶片数据保存为观测记录
+     *
+     * @param leafId 叶片ID
+     * @param area 面积
+     * @param colorH H值
+     * @param colorS S值
+     * @param colorV V值
+     * @param positionX X坐标
+     * @param positionY Y坐标
+     * @param status 健康状态
+     * @param confidence 匹配置信度
+     * @param imagePath 图片路径
+     * @param annotatedPath 标注图路径
+     * @return 创建的观测记录
+     */
+    @Transactional
+    public LeafObservation createObservation(String leafId, Double area, Double colorH,
+            Double colorS, Double colorV, Integer positionX, Integer positionY,
+            String status, Double confidence, String imagePath, String annotatedPath) {
+        LeafObservation observation = new LeafObservation();
+        observation.setLeafId(leafId);
+        observation.setArea(area);
+        observation.setColorH(colorH);
+        observation.setColorS(colorS);
+        observation.setColorV(colorV);
+        observation.setPositionX(positionX);
+        observation.setPositionY(positionY);
+        observation.setCentroidX(positionX != null ? positionX.doubleValue() : null);
+        observation.setCentroidY(positionY != null ? positionY.doubleValue() : null);
+        observation.setStatus(status);
+        observation.setMatchConfidence(confidence);
+        observation.setImagePath(imagePath);
+        observation.setAnnotatedImagePath(annotatedPath);
+        observation.setSource("DETECTED");
+        observation.setObservationTime(LocalDateTime.now());
+
+        return observationRepository.save(observation);
+    }
+
+    /**
+     * 更新叶片的健康状态
+     *
+     * 根据最新观测记录更新叶片的健康状态
+     *
+     * @param leafId 叶片ID
+     * @param newStatus 新的健康状态
+     */
+    @Transactional
+    public void updateLeafHealthStatus(String leafId, String newStatus) {
+        confirmedLeafRepository.findById(leafId).ifPresent(leaf -> {
+            leaf.setHealthStatus(newStatus);
+            leaf.setLastObservationTime(LocalDateTime.now());
+            confirmedLeafRepository.save(leaf);
+        });
+    }
+
+    /**
+     * 获取叶片的历史最大面积
+     *
+     * @param leafId 叶片ID
+     * @return 历史最大面积
+     */
+    public Double getHistoricalMaxArea(String leafId) {
+        return observationRepository.findMaxAreaByLeafId(leafId);
     }
 
     /**

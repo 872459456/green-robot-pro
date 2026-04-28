@@ -3,9 +3,8 @@
     <!-- 统计卡片区域 -->
     <el-row :gutter="20" class="stats-row">
       <el-col :span="6">
-        <el-card shadow="hover">
-          <!-- 总叶片数 -->
-          <div class="stat-card">
+        <el-card shadow="hover" class="stat-card">
+          <div class="stat-content">
             <div class="stat-icon leaf-icon">
               <el-icon><Leaf /></el-icon>
             </div>
@@ -18,9 +17,8 @@
       </el-col>
 
       <el-col :span="6">
-        <el-card shadow="hover">
-          <!-- 需要关注的叶片 -->
-          <div class="stat-card">
+        <el-card shadow="hover" class="stat-card">
+          <div class="stat-content">
             <div class="stat-icon attention-icon">
               <el-icon><Warning /></el-icon>
             </div>
@@ -33,9 +31,8 @@
       </el-col>
 
       <el-col :span="6">
-        <el-card shadow="hover">
-          <!-- 健康叶片 -->
-          <div class="stat-card">
+        <el-card shadow="hover" class="stat-card">
+          <div class="stat-content">
             <div class="stat-icon healthy-icon">
               <el-icon><CircleCheck /></el-icon>
             </div>
@@ -48,9 +45,8 @@
       </el-col>
 
       <el-col :span="6">
-        <el-card shadow="hover">
-          <!-- 监控状态 -->
-          <div class="stat-card">
+        <el-card shadow="hover" class="stat-card">
+          <div class="stat-content">
             <div class="stat-icon status-icon" :class="{ online: isOnline }">
               <el-icon><VideoCamera /></el-icon>
             </div>
@@ -58,6 +54,22 @@
               <div class="stat-value">{{ isOnline ? '在线' : '离线' }}</div>
               <div class="stat-label">监控系统</div>
             </div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 操作入口 -->
+    <el-row :gutter="20" class="action-row">
+      <el-col :span="24">
+        <el-card class="action-card">
+          <div class="action-buttons">
+            <el-button type="primary" size="large" @click="$router.push('/monitor')">
+              <el-icon><VideoPlay /></el-icon> 进入监控
+            </el-button>
+            <el-button size="large" @click="$router.push('/leaves')">
+              <el-icon><Grid /></el-icon> 叶片库
+            </el-button>
           </div>
         </el-card>
       </el-col>
@@ -75,24 +87,28 @@
       </template>
 
       <div class="attention-list">
-        <div 
+        <el-card 
           v-for="leaf in attentionLeaves.slice(0, 6)" 
           :key="leaf.leafId"
           class="attention-item"
+          shadow="hover"
           @click="$router.push(`/leaves/${leaf.leafId}`)"
         >
-          <div class="attention-info">
+          <div class="leaf-header">
             <span class="leaf-id">{{ leaf.leafId }}</span>
             <el-tag :type="getStatusType(leaf.healthStatus)" size="small">
               {{ getStatusText(leaf.healthStatus) }}
             </el-tag>
           </div>
-          <div class="attention-detail">
+          <div class="leaf-detail">
             <span>H: {{ leaf.colorH?.toFixed(1) || '-' }}</span>
             <span>S: {{ leaf.colorS?.toFixed(1) || '-' }}</span>
             <span>V: {{ leaf.colorV?.toFixed(1) || '-' }}</span>
           </div>
-        </div>
+          <div class="leaf-time">
+            {{ formatTime(leaf.lastObservationTime) }}
+          </div>
+        </el-card>
       </div>
     </el-card>
 
@@ -100,23 +116,19 @@
     <el-card class="leaves-card">
       <template #header>
         <div class="card-header">
-          <span>🌿 全部叶片</span>
-          <div>
-            <el-button type="primary" size="small" @click="$router.push('/monitor')">
-              <el-icon><VideoPlay /></el-icon> 监控
-            </el-button>
-            <el-button size="small" @click="$router.push('/leaves')">
-              查看全部
-            </el-button>
-          </div>
+          <span><el-icon><Leaf /></el-icon> 全部叶片</span>
+          <el-button type="primary" size="small" @click="$router.push('/monitor')">
+            <el-icon><VideoPlay /></el-icon> 监控
+          </el-button>
         </div>
       </template>
 
       <div class="leaves-grid" v-if="leaves.length > 0">
-        <div 
+        <el-card 
           v-for="leaf in leaves.slice(0, 8)" 
           :key="leaf.leafId"
           class="leaf-card"
+          shadow="hover"
           @click="$router.push(`/leaves/${leaf.leafId}`)"
         >
           <div class="leaf-header">
@@ -136,15 +148,17 @@
             </div>
             <div class="stat-item">
               <span class="label">成长</span>
-              <span class="value">{{ leaf.growthPercentage?.toFixed(1) || '0' }}%</span>
+              <span class="value growth" :class="{ positive: (leaf.growthPercentage || 0) > 0 }">
+                {{ leaf.growthPercentage?.toFixed(1) || '0' }}%
+              </span>
             </div>
           </div>
-        </div>
+        </el-card>
       </div>
 
       <el-empty v-else description="暂无叶片数据">
         <el-button type="primary" @click="$router.push('/monitor')">
-          去监控页面
+          去监控页面拍摄
         </el-button>
       </el-empty>
     </el-card>
@@ -154,7 +168,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { getAllLeaves, getLeavesNeedingAttention, getLeafStatistics } from '../api/leafApi';
-import { HEALTH_STATUS } from '../config';
 
 // 叶片列表数据
 const leaves = ref([]);
@@ -199,7 +212,15 @@ function getHealthyCount() {
  * 获取状态文本
  */
 function getStatusText(status) {
-  return HEALTH_STATUS[status]?.text || status || '未知';
+  const statusMap = {
+    'HEALTHY': '健康',
+    'YELLOW_LEAF': '黄叶',
+    'WILT': '枯萎',
+    'WILT_WARNING': '中度枯萎',
+    'TREND_YELLOW': '黄化趋势',
+    'TREND_WILT': '枯萎趋势'
+  };
+  return statusMap[status] || status || '未知';
 }
 
 /**
@@ -215,6 +236,15 @@ function getStatusType(status) {
     'TREND_WILT': 'warning'
   };
   return typeMap[status] || 'info';
+}
+
+/**
+ * 格式化时间
+ */
+function formatTime(timeStr) {
+  if (!timeStr) return '-';
+  const date = new Date(timeStr);
+  return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 }
 
 // 组件挂载时开始定时刷新
@@ -244,7 +274,11 @@ onUnmounted(() => {
   margin-bottom: 20px;
 }
 
-.stat-card {
+.stat-card :deep(.el-card__body) {
+  padding: 16px;
+}
+
+.stat-content {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -299,6 +333,25 @@ onUnmounted(() => {
   color: #909399;
 }
 
+/* 操作入口 */
+.action-row {
+  margin-bottom: 20px;
+}
+
+.action-card :deep(.el-card__body) {
+  padding: 20px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.action-buttons .el-button {
+  min-width: 140px;
+}
+
 /* 需要关注的卡片 */
 .attention-card {
   margin-bottom: 20px;
@@ -317,20 +370,15 @@ onUnmounted(() => {
 }
 
 .attention-item {
-  padding: 12px;
-  border-radius: 8px;
-  background: #fff7e6;
-  border: 1px solid #ffd591;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .attention-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.attention-info {
+.attention-item .leaf-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -342,14 +390,24 @@ onUnmounted(() => {
   color: #303133;
 }
 
-.attention-detail {
+.attention-item .leaf-detail {
   display: flex;
   gap: 12px;
   font-size: 12px;
   color: #666;
+  margin-bottom: 4px;
+}
+
+.attention-item .leaf-time {
+  font-size: 11px;
+  color: #999;
 }
 
 /* 叶片卡片网格 */
+.leaves-card {
+  margin-bottom: 20px;
+}
+
 .leaves-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -357,18 +415,12 @@ onUnmounted(() => {
 }
 
 .leaf-card {
-  padding: 16px;
-  border-radius: 12px;
-  background: white;
-  border: 1px solid #f0f0f0;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .leaf-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  border-color: #1890ff;
 }
 
 .leaf-header {
@@ -399,5 +451,13 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: bold;
   color: #303133;
+}
+
+.stat-item .value.growth {
+  color: #909399;
+}
+
+.stat-item .value.growth.positive {
+  color: #52c41a;
 }
 </style>
