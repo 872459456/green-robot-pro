@@ -42,4 +42,4 @@ v2.2.0 (Python) → **办公室绿萝 Pro** (Java + Vue + AI模型)
 
 ## 参考项目
 
-[办公室绿萝 v2.2.0](https://github.com/872459456/green-robot-monitor) - Python生产版本
+[办公室绿萝 v2.2.0](https://github.com/872459456/green-robot-monitor) | [办公室绿萝 Pro](https://github.com/872459456/green-robot-pro) - Python生产版本

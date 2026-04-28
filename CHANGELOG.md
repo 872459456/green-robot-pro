@@ -115,4 +115,4 @@
 
 **Python生产版本**
 
-详见: https://github.com/872459456/green-robot-monitor
+详见: https://github.com/872459456/green-robot-monitor | [办公室绿萝 Pro](https://github.com/872459456/green-robot-pro)
