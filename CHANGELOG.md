@@ -2,6 +2,28 @@
 
 ---
 
+## v4.0.0 (2026-04-28) 🔄 开发中
+
+### 本地模型集成 - YOLOv8
+
+**后端更新:**
+- pom.xml: 添加 ONNX Runtime 依赖
+- YoloDetectionService: YOLOv8检测服务（模拟模式）
+- DetectionController: 检测API控制器
+- DetectionResultDTO: 检测结果DTO
+- DetectionResponseDTO: 检测响应DTO
+- ModelStatusDTO: 模型状态DTO
+- application.yml: 添加model配置
+
+**前端更新:**
+- detectApi.js: 检测API服务封装
+
+**配置:**
+- 模型路径: backend/models/
+- ONNX Runtime: v1.16.3
+
+---
+
 ## v3.1.0 (2026-04-28) ✅ 已完成
 
 ### PRD v3.1 全部任务完成

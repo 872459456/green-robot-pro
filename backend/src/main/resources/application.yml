@@ -36,6 +36,14 @@ feishu:
   webhook:
     url: ${FEISHU_WEBHOOK_URL:}
 
+# YOLOv8模型配置
+model:
+  enabled: true
+  path: models/yolov8n-leaf.onnx
+  conf-threshold: 0.5
+  iou-threshold: 0.45
+  max-det: 100
+
 logging:
   level:
     com.greenrobot.monitor: INFO
