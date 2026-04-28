@@ -20,6 +20,11 @@ const routes = [
     path: '/leaves',
     name: 'Leaves',
     component: () => import('../views/Leaves.vue')
+  },
+  {
+    path: '/leaves/:leafId',
+    name: 'LeafDetail',
+    component: () => import('../views/LeafDetail.vue')
   }
 ]
 

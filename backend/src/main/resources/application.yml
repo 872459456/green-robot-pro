@@ -16,9 +16,14 @@ spring:
         format_sql: true
 
 server:
-  port: 8080
+  port: 5501
   servlet:
     context-path: /api
+
+# 飞书Webhook配置
+feishu:
+  webhook:
+    url: ${FEISHU_WEBHOOK_URL:}
 
 logging:
   level:
