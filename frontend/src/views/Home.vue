@@ -3,7 +3,7 @@
     <el-row :gutter="20">
       <el-col :span="24">
         <el-card>
-          <template #header>🌿 绿萝监测系统 v3.0</template>
+          <template #header>🌿 办公室绿萝 Pro</template>
           <el-result
             icon="info"
             title="系统开发中"
@@ -30,7 +30,7 @@
       <el-col :span="8">
         <el-card>
           <template #header>🚀 开发版本</template>
-          <el-statistic title="Java + Vue" :value="3.0" :precision="1" />
+          <el-statistic title="Java + Vue + AI" value="Pro" />
           <p class="version-note">重构进行中</p>
         </el-card>
       </el-col>

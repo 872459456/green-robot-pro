@@ -16,8 +16,8 @@
     <version>3.0.0</version>
     <packaging>jar</packaging>
 
-    <name>Green Robot Monitor</name>
-    <description>办公室绿萝监测系统 - Java后端</description>
+    <name>办公室绿萝 Pro</name>
+    <description>办公室绿萝生长监测系统 - Java后端 (AI模型版)</description>
 
     <properties>
         <java.version>17</java.version>

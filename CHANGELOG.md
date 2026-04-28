@@ -1,4 +1,4 @@
-# 绿萝监测系统 v3 - 更新日志
+# 办公室绿萝 Pro - 更新日志
 
 ---
 
@@ -6,14 +6,17 @@
 
 ### 项目初始化
 
+**产品名称**: 办公室绿萝 Pro
+
 **技术栈升级:**
 - 前端: Vue 3 + Element Plus
 - 后端: Java (Spring Boot)
 - 数据库: SQLite (保留)
 - 存储: 本地文件系统
+- 模型: 本地AI模型 (YOLOv8 + ONNX)
 
 **架构变更:**
-- 从Python单体应用 → Java + Vue前后端分离
+- 从Python单体应用 → Java + Vue前后端分离 + AI模型
 - 保留Python v2.2.0作为生产参考
 
 ---

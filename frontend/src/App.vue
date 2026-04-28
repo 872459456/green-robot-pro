@@ -2,7 +2,7 @@
   <div id="app">
     <el-container>
       <el-header>
-        <h1>🌿 绿萝监测系统 v3.0</h1>
+        <h1>🌿 办公室绿萝 Pro</h1>
         <el-menu
           mode="horizontal"
           :router="true"
