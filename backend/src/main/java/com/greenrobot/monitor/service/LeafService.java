@@ -5,6 +5,7 @@ import com.greenrobot.monitor.entity.LeafObservation;
 import com.greenrobot.monitor.repository.ConfirmedLeafRepository;
 import com.greenrobot.monitor.repository.LeafObservationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.Data;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -166,7 +167,7 @@ public class LeafService {
      * @return 最近的N条记录
      */
     public List<LeafObservation> getRecentObservations(String leafId, int limit) {
-        return observationRepository.findTopNByLeafIdOrderByObservationTimeDesc(leafId, limit);
+        return observationRepository.findRecentObservations(leafId, limit);
     }
 
     /**

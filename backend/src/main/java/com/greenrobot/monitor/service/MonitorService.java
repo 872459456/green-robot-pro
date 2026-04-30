@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -23,10 +24,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 监控服务
  * 
  * 负责摄像头控制、图像拍摄、叶片检测
+ * 图片存储已改造为OSS（MinIO）模式
  * 
  * @author 狼群团队
- * @version 3.1.0
- * @since 2026-04-28
+ * @version 4.1.0
+ * @since 2026-04-30
  */
 @Slf4j
 @Service
@@ -36,7 +38,7 @@ public class MonitorService {
     @Value("${camera.index:0}")
     private int cameraIndex;
     
-    /** 拍摄图片存储目录 */
+    /** 拍摄图片存储目录（本地备用） */
     @Value("${camera.image-dir:../data/captures}")
     private String imageDir;
     
@@ -50,10 +52,10 @@ public class MonitorService {
     /** 最后拍摄时间 */
     private LocalDateTime lastCaptureTime;
     
-    /** 最后拍摄路径 */
+    /** 最后拍摄路径（OSS URL或本地路径） */
     private String lastCapturePath;
     
-    /** 标注图路径 */
+    /** 标注图路径（OSS URL或本地路径） */
     private String lastAnnotatedPath;
     
     /** 监控系统运行状态 */
@@ -63,8 +65,19 @@ public class MonitorService {
     private static final DateTimeFormatter FILE_DATE_FORMAT = 
             DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
     
+    /** OSS服务（注入） */
+    private OssService ossService;
+    
     /** 观测记录服务（注入） */
     private ObservationService observationService;
+    
+    /**
+     * 设置OSS服务
+     */
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setOssService(OssService ossService) {
+        this.ossService = ossService;
+    }
     
     /**
      * 设置观测记录服务
@@ -301,25 +314,20 @@ public class MonitorService {
     }
     
     /**
-     * 保存图片到文件
+     * 保存图片
+     * 
+     * 优先上传到OSS，失败则降级到本地存储
      * 
      * @param image 图片
      * @param timestamp 时间戳
      * @param annotated 是否为标注图
-     * @return 保存的文件路径
+     * @return 保存的文件路径（OSS URL或本地路径）
      */
     private String saveImage(BufferedImage image, String timestamp, boolean annotated) {
         try {
-            // 确保目录存在
-            File dir = new File(imageDir);
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-            
             // 构建文件名
             String prefix = annotated ? "annotated_" : "capture_";
             String filename = prefix + timestamp + ".jpg";
-            File file = new File(dir, filename);
             
             // 绘制标注信息
             if (annotated) {
@@ -341,14 +349,57 @@ public class MonitorService {
                 g2d.dispose();
             }
             
-            // 保存为JPEG
-            ImageIO.write(image, "jpg", file);
+            // 转换为字节数组
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(image, "jpg", baos);
+            byte[] imageBytes = baos.toByteArray();
             
-            log.info("图片保存成功: {}", file.getAbsolutePath());
-            return file.getAbsolutePath();
+            // OSS对象Key
+            String ossKey = "captures/" + filename;
+            
+            // 尝试上传到OSS
+            if (ossService != null && ossService.isOssEnabled()) {
+                try {
+                    String ossUrl = ossService.uploadBytes(ossKey, imageBytes);
+                    log.info("图片上传OSS成功: {}", ossUrl);
+                    return ossUrl;
+                } catch (Exception e) {
+                    log.warn("OSS上传失败，降级到本地存储: {}", e.getMessage());
+                }
+            }
+            
+            // 降级到本地存储
+            return saveImageLocally(image, filename);
             
         } catch (IOException e) {
             log.error("图片保存失败", e);
+            return null;
+        }
+    }
+    
+    /**
+     * 保存图片到本地（降级方案）
+     * 
+     * @param image 图片
+     * @param filename 文件名
+     * @return 本地文件路径
+     */
+    private String saveImageLocally(BufferedImage image, String filename) {
+        try {
+            // 确保目录存在
+            File dir = new File(imageDir);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            
+            File file = new File(dir, filename);
+            ImageIO.write(image, "jpg", file);
+            
+            log.info("图片保存到本地: {}", file.getAbsolutePath());
+            return file.getAbsolutePath();
+            
+        } catch (IOException e) {
+            log.error("本地保存失败", e);
             return null;
         }
     }

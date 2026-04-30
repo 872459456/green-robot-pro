@@ -1,5 +1,10 @@
 package com.greenrobot.monitor.service;
 
+import ai.onnxruntime.OnnxTensor;
+import ai.onnxruntime.OnnxValue;
+import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtSession;
+import ai.onnxruntime.OrtSession.Result;
 import com.greenrobot.monitor.dto.DetectionResponseDTO;
 import com.greenrobot.monitor.dto.DetectionResultDTO;
 import com.greenrobot.monitor.dto.ModelStatusDTO;
@@ -51,10 +56,10 @@ public class YoloDetectionService {
     private boolean modelEnabled;
     
     /** ONNX Runtime会话 */
-    private Object ortSession = null;
+    private OrtSession ortSession = null;
     
     /** ONNX Runtime环境 */
-    private Object ortEnv = null;
+    private OrtEnvironment ortEnv = null;
     
     /** 模型是否已加载 */
     private boolean isModelLoaded = false;
@@ -162,34 +167,29 @@ public class YoloDetectionService {
      */
     private void loadOnnxModel(String modelPath) {
         try {
-            // 获取ONNX Runtime类
-            Class<?> envClass = Class.forName("ai.onnxruntime.OrtEnvironment");
-            Class<?> sessionClass = Class.forName("ai.onnxruntime.OrtSession");
+            log.info("正在初始化ONNX Runtime...");
             
-            log.info("ONNX Runtime库已找到");
+            // 创建ONNX Runtime环境
+            ortEnv = OrtEnvironment.getEnvironment();
+            log.info("ONNX环境创建成功");
             
-            // 创建环境
-            java.lang.reflect.Method envFactoryMethod = envClass.getMethod("getGlobal");
-            Object env = envFactoryMethod.invoke(null);
+            // 创建会话选项
+            OrtSession.SessionOptions sessionOptions = new OrtSession.SessionOptions();
+            sessionOptions.setIntraOpNumThreads(1);
             
-            if (env == null) {
-                log.info("创建新的ONNX环境");
-            }
+            // 创建推理会话
+            ortSession = ortEnv.createSession(modelPath, sessionOptions);
+            log.info("ONNX会话创建成功，共{}个输入", ortSession.getNumInputs());
             
-            // 创建会话
-            java.lang.reflect.Method createSessionMethod = sessionClass.getMethod(
-                "createSession", String.class);
+            // 打印模型输入名称
+            Set<String> inputNames = ortSession.getInputNames();
+            log.info("模型输入名称: {}", inputNames);
             
-            ortSession = createSessionMethod.invoke(null, modelPath);
-            log.info("ONNX会话创建成功");
-            
-        } catch (ClassNotFoundException e) {
-            log.warn("ONNX Runtime库未找到，将使用模拟模式");
-            log.info("请安装ONNX Runtime: pip install onnxruntime");
-            isModelLoaded = false;
         } catch (Exception e) {
-            log.warn("ONNX模型加载失败，使用模拟模式: {}", e.getMessage());
-            isModelLoaded = true; // 保持模拟模式可用
+            log.error("ONNX模型加载失败: {}", e.getMessage(), e);
+            isModelLoaded = false;
+            ortSession = null;
+            ortEnv = null;
         }
     }
     
@@ -275,12 +275,147 @@ public class YoloDetectionService {
      */
     private List<DetectionResultDTO> runOnnxInference(float[][][][] inputTensor, 
             int imgWidth, int imgHeight) {
-        // TODO: 实现真实的ONNX推理
-        // YOLOv8输出格式: [1x84x8400] - 84 = 4(bbox) + 80(class scores)
-        // 需要后处理解析
-        
-        // 目前返回模拟结果
-        return simulateDetectionResults(imgWidth, imgHeight);
+        try {
+            // ========== 1. 转换输入张量格式 ==========
+            int batchSize = 1;
+            int channels = 3;
+            int height = INPUT_SIZE;
+            int width = INPUT_SIZE;
+            
+            float[] inputData = new float[batchSize * channels * height * width];
+            int idx = 0;
+            for (int b = 0; b < batchSize; b++) {
+                for (int c = 0; c < channels; c++) {
+                    for (int h = 0; h < height; h++) {
+                        for (int w = 0; w < width; w++) {
+                            inputData[idx++] = inputTensor[b][c][h][w];
+                        }
+                    }
+                }
+            }
+            
+            // ========== 2. 创建OnnxTensor ==========
+            long[] inputShape = {batchSize, channels, height, width};
+            OnnxTensor inputTensorObj = OnnxTensor.createTensor(ortEnv, FloatBuffer.wrap(inputData), inputShape);
+            
+            // ========== 3. 执行推理 ==========
+            log.debug("开始ONNX推理...");
+            // ortSession.run() 期望 Map<String, OnnxTensorLike>
+            java.util.Map<String, ai.onnxruntime.OnnxTensorLike> inputs = new java.util.HashMap<>();
+            // 获取输入名称
+            java.util.Set<String> inputNames = ortSession.getInputNames();
+            String inputName = inputNames.iterator().next();
+            inputs.put(inputName, inputTensorObj);
+            
+            try (Result results = ortSession.run(inputs)) {
+                // ========== 4. 解析输出张量 ==========
+                // YOLOv8输出: [1x84x8400] 或 [84x8400]
+                // 84 = 4 (bbox: x,y,w,h) + 80 (class scores)
+                // 8400 = 20x20 + 40x40 + 80x80 = 8400
+                
+                // 遍历结果
+                Object outputObj = null;
+                for (java.util.Map.Entry<String, OnnxValue> entry : results) {
+                    log.debug("输出名称: {}", entry.getKey());
+                    outputObj = entry.getValue().getValue();
+                    break; // 只取第一个输出
+                }
+                
+                if (outputObj == null) {
+                    log.error("无法获取输出张量");
+                    return simulateDetectionResults(imgWidth, imgHeight);
+                }
+                
+                // 处理不同的张量格式
+                float[][] predictions;
+                if (outputObj instanceof float[][]) {
+                    // [84, 8400] 格式
+                    predictions = (float[][]) outputObj;
+                } else if (outputObj instanceof float[][][]) {
+                    // [1, 84, 8400] 格式，取第一个
+                    predictions = ((float[][][]) outputObj)[0];
+                } else {
+                    log.error("未知的输出张量格式: {}", outputObj.getClass().getName());
+                    return simulateDetectionResults(imgWidth, imgHeight);
+                }
+                
+                int numBoxes = predictions[0].length; // 8400
+                int numClasses = 80;
+                
+                List<DetectionResultDTO> detections = new ArrayList<>();
+                
+                // ========== 5. 遍历每个检测框 ==========
+                for (int i = 0; i < numBoxes; i++) {
+                    // 获取bbox预测值 (归一化坐标)
+                    float xCenter = predictions[0][i];
+                    float yCenter = predictions[1][i];
+                    float w = predictions[2][i];
+                    float h = predictions[3][i];
+                    
+                    // 找到最高置信度的类别
+                    float maxScore = 0;
+                    int classId = 0;
+                    for (int c = 0; c < numClasses; c++) {
+                        float score = predictions[4 + c][i];
+                        if (score > maxScore) {
+                            maxScore = score;
+                            classId = c;
+                        }
+                    }
+                    
+                    // 应用置信度阈值
+                    if (maxScore < confThreshold) {
+                        continue;
+                    }
+                    
+                    // ========== 6. 坐标转换 ==========
+                    // YOLOv8输出是归一化的 (0-1)，转换到原图坐标
+                    float x = xCenter * imgWidth;
+                    float y = yCenter * imgHeight;
+                    float boxW = w * imgWidth;
+                    float boxH = h * imgHeight;
+                    
+                    // 转换为左上角坐标
+                    float xMin = x - boxW / 2;
+                    float yMin = y - boxH / 2;
+                    
+                    // 确保边界合法
+                    xMin = Math.max(0, Math.min(xMin, imgWidth - 1));
+                    yMin = Math.max(0, Math.min(yMin, imgHeight - 1));
+                    boxW = Math.min(boxW, imgWidth - xMin);
+                    boxH = Math.min(boxH, imgHeight - yMin);
+                    
+                    // 获取类别名称
+                    String className = getClassName(classId);
+                    
+                    detections.add(DetectionResultDTO.create(
+                            classId,
+                            className,
+                            maxScore,
+                            xMin, yMin, boxW, boxH
+                    ));
+                }
+                
+                log.debug("原始检测数量: {}", detections.size());
+                return detections;
+            }
+            
+        } catch (Exception e) {
+            log.error("ONNX推理异常: {}", e.getMessage(), e);
+            // 降级到模拟检测
+            return simulateDetectionResults(imgWidth, imgHeight);
+        }
+    }
+    
+    /**
+     * 获取类别名称
+     * 尝试从COCO类别映射，否则返回通用名称
+     */
+    private String getClassName(int classId) {
+        if (classId < COCO_CLASSES.length) {
+            return COCO_CLASSES[classId];
+        }
+        return CLASS_NAMES.getOrDefault(classId, "object_" + classId);
     }
     
     /**

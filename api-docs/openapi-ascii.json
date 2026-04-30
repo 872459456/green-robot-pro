@@ -1,0 +1,269 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Green Robot Monitor Pro API",
+    "description": "Office Plant Growth Monitoring System v3.0",
+    "version": "3.0.0"
+  },
+  "servers": [
+    {"url": "http://localhost:5501/api", "description": "Local Development"}
+  ],
+  "paths": {
+    "/leaves": {
+      "get": {
+        "summary": "Get All Leaves",
+        "description": "Retrieve all confirmed leaf records",
+        "tags": ["Leaf Management"],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {"$ref": "#/components/schemas/ConfirmedLeaf"}
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Confirm New Leaf",
+        "description": "Add detected leaf to confirmed records",
+        "tags": ["Leaf Management"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/LeafObservation"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/components/schemas/ConfirmedLeaf"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leaves/{leafId}": {
+      "get": {
+        "summary": "Get Leaf Detail",
+        "description": "Get detailed info for a specific leaf",
+        "tags": ["Leaf Management"],
+        "parameters": [
+          {"name": "leafId", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "Success"},
+          "404": {"description": "Not Found"}
+        }
+      },
+      "put": {
+        "summary": "Update Leaf Info",
+        "description": "Update leaf record with latest observation",
+        "tags": ["Leaf Management"],
+        "parameters": [
+          {"name": "leafId", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/LeafObservation"}
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Success"},
+          "404": {"description": "Not Found"}
+        }
+      },
+      "delete": {
+        "summary": "Delete Leaf",
+        "description": "Delete leaf record and all observations",
+        "tags": ["Leaf Management"],
+        "parameters": [
+          {"name": "leafId", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "204": {"description": "Deleted"},
+          "404": {"description": "Not Found"}
+        }
+      }
+    },
+    "/leaves/attention": {
+      "get": {
+        "summary": "Get Attention Leaves",
+        "description": "Return leaves with abnormal health status",
+        "tags": ["Leaf Management"],
+        "responses": {
+          "200": {"description": "Success"}
+        }
+      }
+    },
+    "/leaves/statistics": {
+      "get": {
+        "summary": "Get Statistics",
+        "description": "Return total leaves and status counts",
+        "tags": ["Leaf Management"],
+        "responses": {
+          "200": {"description": "Success"}
+        }
+      }
+    },
+    "/leaves/{leafId}/observations": {
+      "get": {
+        "summary": "Get Observation History",
+        "description": "Get all historical observations for a leaf",
+        "tags": ["Observation Records"],
+        "parameters": [
+          {"name": "leafId", "in": "path", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "Success"}
+        }
+      }
+    },
+    "/leaves/{leafId}/observations/recent": {
+      "get": {
+        "summary": "Get Recent Observations",
+        "description": "Get recent N observations for a leaf",
+        "tags": ["Observation Records"],
+        "parameters": [
+          {"name": "leafId", "in": "path", "required": true, "schema": {"type": "string"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer", "default": 10}}
+        ],
+        "responses": {
+          "200": {"description": "Success"}
+        }
+      }
+    },
+    "/detect": {
+      "post": {
+        "summary": "Run Object Detection",
+        "description": "Run YOLO detection on specified image",
+        "tags": ["Detection"],
+        "parameters": [
+          {"name": "imagePath", "in": "query", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "Success"},
+          "400": {"description": "Failed"}
+        }
+      }
+    },
+    "/detect/batch": {
+      "post": {
+        "summary": "Batch Detection",
+        "description": "Run YOLO detection on multiple images",
+        "tags": ["Detection"],
+        "parameters": [
+          {"name": "imagePaths", "in": "query", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "Completed"}
+        }
+      }
+    },
+    "/detect/annotated-image": {
+      "get": {
+        "summary": "Get Annotated Image",
+        "description": "Return image with detection boxes",
+        "tags": ["Detection"],
+        "parameters": [
+          {"name": "imagePath", "in": "query", "required": true, "schema": {"type": "string"}}
+        ],
+        "responses": {
+          "200": {"description": "JPEG image returned"}
+        }
+      }
+    },
+    "/monitor/capture": {
+      "post": {
+        "summary": "Capture Image",
+        "description": "Control camera to capture an image",
+        "tags": ["Monitor"],
+        "responses": {
+          "200": {"description": "Success"}
+        }
+      }
+    },
+    "/monitor/status": {
+      "get": {
+        "summary": "Get Monitor Status",
+        "description": "Get camera and system status",
+        "tags": ["Monitor"],
+        "responses": {
+          "200": {"description": "Success"}
+        }
+      }
+    },
+    "/model/status": {
+      "get": {
+        "summary": "Get Model Status",
+        "description": "Get YOLO model loading status",
+        "tags": ["Detection"],
+        "responses": {
+          "200": {"description": "Success"}
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ConfirmedLeaf": {
+        "type": "object",
+        "properties": {
+          "leafId": {"type": "string", "description": "Unique leaf ID"},
+          "positionX": {"type": "integer", "description": "Center X coordinate"},
+          "positionY": {"type": "integer", "description": "Center Y coordinate"},
+          "area": {"type": "number", "description": "Area in pixels"},
+          "colorH": {"type": "number", "description": "HSV H value"},
+          "colorS": {"type": "number", "description": "HSV S value"},
+          "colorV": {"type": "number", "description": "HSV V value"},
+          "circularity": {"type": "number", "description": "Circularity ratio"},
+          "imagePath": {"type": "string", "description": "Image file path"},
+          "annotatedImagePath": {"type": "string", "description": "Annotated image path"},
+          "healthStatus": {"type": "string", "enum": ["HEALTHY", "YELLOW_LEAF", "WILT", "WILT_WARNING"]},
+          "growthPercentage": {"type": "number", "description": "Growth percentage"},
+          "confirmedAt": {"type": "string", "format": "date-time"},
+          "lastObservationTime": {"type": "string", "format": "date-time"},
+          "lastAlertTime": {"type": "string", "format": "date-time"},
+          "notes": {"type": "string", "description": "User notes"},
+          "createdAt": {"type": "string", "format": "date-time"},
+          "updatedAt": {"type": "string", "format": "date-time"}
+        }
+      },
+      "LeafObservation": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "integer", "format": "int64"},
+          "leafId": {"type": "string"},
+          "observationTime": {"type": "string", "format": "date-time"},
+          "imagePath": {"type": "string"},
+          "area": {"type": "number"},
+          "colorH": {"type": "number"},
+          "colorS": {"type": "number"},
+          "colorV": {"type": "number"},
+          "centroidX": {"type": "number"},
+          "centroidY": {"type": "number"},
+          "status": {"type": "string"},
+          "matchConfidence": {"type": "number"},
+          "captureTime": {"type": "string", "format": "date-time"},
+          "annotatedImagePath": {"type": "string"},
+          "positionX": {"type": "integer"},
+          "positionY": {"type": "integer"},
+          "source": {"type": "string", "enum": ["DETECTED", "MANUAL"]},
+          "createdAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    }
+  }
+}

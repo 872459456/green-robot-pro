@@ -34,7 +34,8 @@ public interface LeafObservationRepository extends JpaRepository<LeafObservation
      * @param limit 返回记录数
      * @return 最近的N条记录
      */
-    List<LeafObservation> findTopNByLeafIdOrderByObservationTimeDesc(String leafId, int limit);
+    @Query("SELECT o FROM LeafObservation o WHERE o.leafId = :leafId ORDER BY o.observationTime DESC LIMIT :limit")
+    List<LeafObservation> findRecentObservations(@org.springframework.data.repository.query.Param("leafId") String leafId, @org.springframework.data.repository.query.Param("limit") int limit);
 
     /**
      * 查询特定状态的观测记录

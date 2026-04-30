@@ -174,6 +174,6 @@ public class ObservationService {
      * @return 观测记录列表
      */
     public List<LeafObservation> getRecentObservations(String leafId, int limit) {
-        return observationRepository.findTopNByLeafIdOrderByObservationTimeDesc(leafId, limit);
+        return observationRepository.findRecentObservations(leafId, limit);
     }
 }

@@ -4,6 +4,7 @@ import com.greenrobot.monitor.dto.DetectionResponseDTO;
 import com.greenrobot.monitor.dto.ModelStatusDTO;
 import com.greenrobot.monitor.service.YoloDetectionService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,10 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.awt.Color;
+import java.awt.BasicStroke;
+import java.awt.Font;
+import java.awt.Graphics2D;
 
 /**
  * YOLO目标检测REST API控制器
@@ -22,6 +27,7 @@ import java.io.File;
  * @version 4.0.0
  * @since 2026-04-28
  */
+@Slf4j
 @RestController
 @RequestMapping("/detect")
 @RequiredArgsConstructor

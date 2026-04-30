@@ -1,0 +1,59 @@
+# =====================================================
+# 办公室绿萝 Pro - MySQL 数据源配置
+# =====================================================
+# 激活方式: spring.profiles.active=mysql
+# =====================================================
+
+spring:
+  datasource:
+    # MySQL 数据源配置
+    url: jdbc:mysql://localhost:3306/green_robot_pro?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: ""
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 连接池配置
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      pool-name: GreenRobotHikariCP
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      connection-test-query: SELECT 1
+
+  jpa:
+    # Hibernate 配置
+    hibernate:
+      ddl-auto: validate  # 生产环境用 validate，生产环境用 update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        use_sql_comments: false
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+
+  # SQLite 配置（备用，切换数据源时保持不变）
+  sqlite:
+    enabled: false
+    database-path: D:/works/Project/green-robot-monitor-v3/data/green_robot_v3.db
+
+# 服务器配置
+server:
+  port: 5501
+
+# =====================================================
+# 多数据源切换说明
+# =====================================================
+# 切换到 MySQL: 
+#   java -jar app.jar --spring.profiles.active=mysql
+#
+# 切换回 SQLite:
+#   java -jar app.jar --spring.profiles.active=sqlite
+#
+# 或修改 application.yml 中的 spring.profiles.active
+# =====================================================

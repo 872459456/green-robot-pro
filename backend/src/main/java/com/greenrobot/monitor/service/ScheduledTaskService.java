@@ -2,6 +2,7 @@ package com.greenrobot.monitor.service;
 
 import com.greenrobot.monitor.entity.ConfirmedLeaf;
 import com.greenrobot.monitor.entity.LeafObservation;
+import com.greenrobot.monitor.dto.CaptureResultDTO;
 import com.greenrobot.monitor.repository.ConfirmedLeafRepository;
 import com.greenrobot.monitor.repository.LeafObservationRepository;
 import lombok.RequiredArgsConstructor;
@@ -133,7 +134,7 @@ public class ScheduledTaskService {
      * @param captureResult 拍摄结果
      */
     @Transactional
-    private void detectAndTrackLeaves(var captureResult) {
+    private void detectAndTrackLeaves(CaptureResultDTO captureResult) {
         // TODO: 实现真实的叶片检测和追踪逻辑
         // 1. 读取拍摄图片
         // 2. HSV分割提取绿色区域

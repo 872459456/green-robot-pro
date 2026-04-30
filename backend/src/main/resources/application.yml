@@ -1,9 +1,19 @@
+# =====================================================
+# 办公室绿萝 Pro - 主配置文件
+# =====================================================
+# 默认使用 SQLite 数据源
+# 切换到 MySQL: 
+#   java -jar app.jar --spring.profiles.active=mysql
+# =====================================================
+
 spring:
   application:
     name: green-robot-monitor
+  profiles:
+    active: default  # default 或 mysql
 
   datasource:
-    url: jdbc:sqlite:../data/green_robot.db
+    url: jdbc:sqlite:D:/works/Project/green-robot-monitor-v3/data/green_robot_v3.db
     driver-class-name: org.sqlite.JDBC
 
   jpa:
@@ -43,6 +53,15 @@ model:
   conf-threshold: 0.5
   iou-threshold: 0.45
   max-det: 100
+
+# OSS对象存储配置
+oss:
+  enabled: true
+  endpoint: http://localhost:9000
+  bucket: green-robot-captures
+  access-key: admin
+  secret-key: greenrobot123
+  local-dir: ../data/captures
 
 logging:
   level:
